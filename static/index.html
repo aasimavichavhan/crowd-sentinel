@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CROWD SENTINEL | Stampede Early-Warning System</title>
+  <link rel="stylesheet" href="/static/style.css">
+  <!-- Chart.js CDN for real-time risk timeline -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  <!-- Google Fonts: Inter and Orbitron/JetBrains Mono for Command Center aesthetic -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@500;600;700&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="command-center-theme">
+  <!-- Top Navigation & Command Bar -->
+  <header class="top-nav">
+    <div class="nav-left">
+      <div class="logo-mark">
+        <span class="radar-dot"></span>
+        <span class="radar-ping"></span>
+      </div>
+      <div class="title-group">
+        <h1>CROWD SENTINEL</h1>
+        <span class="sub-title">Real-Time Crowd Dynamics & Stampede Early-Warning Command</span>
+      </div>
+    </div>
+
+    <div class="nav-center">
+      <!-- Privacy Badge (Key differentiator for pitch) -->
+      <div class="privacy-badge" title="Edge Spatial Density & Flow Vectors Only. Zero Identity or Facial Recognition.">
+        <svg class="privacy-icon" viewBox="0 0 24 24" width="16" height="16" fill="currentColor">
+          <path d="M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-3.11v8.8z"/>
+        </svg>
+        <span class="privacy-text">PRIVACY PRESERVED: ZERO BIOMETRICS</span>
+      </div>
+    </div>
+
+    <div class="nav-right">
+      <div class="status-pill" id="system-status-pill">
+        <span class="status-indicator" id="status-indicator"></span>
+        <span id="status-label">INITIALIZING</span>
+      </div>
+      <button class="dispatch-btn" id="dispatch-btn" title="Simulate SMS/Radio Broadcast to Ground Security">
+        <span class="dispatch-icon">🚨</span>
+        <span>NOTIFY CONTROL ROOM</span>
+      </button>
+    </div>
+  </header>
+
+  <!-- Main Grid Workspace -->
+  <main class="dashboard-layout">
+    <!-- Left Column: Video Feed & Zone Matrix -->
+    <section class="feed-column">
+      <!-- Stream Control Toolbar -->
+      <div class="stream-toolbar">
+        <div class="control-group">
+          <label for="video-select" class="control-label">FEED SOURCE:</label>
+          <select id="video-select" class="dark-select">
+            <option value="">Loading video feeds...</option>
+          </select>
+        </div>
+
+        <div class="button-group">
+          <button id="btn-play" class="btn btn-primary" title="Play / Resume Stream">
+            <span class="icon">▶</span> Play
+          </button>
+          <button id="btn-pause" class="btn btn-secondary" title="Pause Stream">
+            <span class="icon">⏸</span> Pause
+          </button>
+          <button id="btn-restart" class="btn btn-secondary" title="Restart Stream from 00:00">
+            <span class="icon">↺</span> Restart
+          </button>
+        </div>
+
+        <div class="sensitivity-group">
+          <span class="control-label">SENSITIVITY:</span>
+          <div class="segmented-control">
+            <button class="segment" data-preset="sensitive">High</button>
+            <button class="segment active" data-preset="balanced">Balanced</button>
+            <button class="segment" data-preset="relaxed">Relaxed</button>
+          </div>
+        </div>
+
+        <div class="sound-toggle-group">
+          <button id="audio-toggle" class="btn-icon" title="Toggle Audio Alarm Beep">
+            <span id="audio-icon">🔇</span>
+          </button>
+        </div>
+      </div>
+
+      <!-- Live Stream Viewport -->
+      <div class="video-container" id="video-wrapper">
+        <img id="live-feed" src="" alt="Connecting to real-time crowd telemetry..." class="stream-image">
+        <div class="stream-overlay-idle" id="stream-idle">
+          <div class="spinner"></div>
+          <p>Connecting to Video Stream Engine...</p>
+        </div>
+
+        <!-- Float Telemetry Pills -->
+        <div class="stream-floating-hud">
+          <div class="telemetry-pill">
+            <span class="pill-label">HEADCOUNT</span>
+            <span class="pill-val" id="hud-total-people">0</span>
+          </div>
+          <div class="telemetry-pill">
+            <span class="pill-label">FRAME RATE</span>
+            <span class="pill-val" id="hud-fps">0.0 FPS</span>
+          </div>
+          <div class="telemetry-pill risk-pill-wrapper">
+            <span class="pill-label">CURRENT RISK</span>
+            <span class="pill-val risk-val" id="hud-risk-tier">NORMAL</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Zone Matrix Cards (3x3 Grid Details) -->
+      <div class="zone-matrix-section">
+        <div class="section-header">
+          <h2>ZONE-BY-ZONE TELEMETRY MATRIX (3×3 GRID)</h2>
+          <span class="matrix-legend">
+            <span class="leg-item"><span class="badge normal"></span> Normal</span>
+            <span class="leg-item"><span class="badge moderate"></span> Moderate</span>
+            <span class="leg-item"><span class="badge dense"></span> Dense</span>
+            <span class="leg-item"><span class="badge risky"></span> Risky</span>
+          </span>
+        </div>
+
+        <div class="zone-grid" id="zone-grid-container">
+          <!-- 9 dynamic zone cards injected here -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Right Column: Analytics, Early Warning Alerts & History -->
+    <aside class="sidebar-column">
+      <!-- Risk Trend Over Time Chart -->
+      <div class="panel chart-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-icon">📈</span>
+            <h3>REAL-TIME RISK TRAJECTORY</h3>
+          </div>
+          <span class="chart-status-tag" id="chart-latest-score">Risk: 0.0</span>
+        </div>
+        <div class="chart-container">
+          <canvas id="riskChart"></canvas>
+        </div>
+        <div class="chart-legend-row">
+          <span class="chart-thresh green">0–34: Normal</span>
+          <span class="chart-thresh yellow">35–60: Moderate</span>
+          <span class="chart-thresh orange">61–78: Dense</span>
+          <span class="chart-thresh red">79–100: Risky</span>
+        </div>
+      </div>
+
+      <!-- Real-Time Early-Warning Alert Log -->
+      <div class="panel alert-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="alert-bell-icon">🔔</span>
+            <h3>EARLY-WARNING INCIDENT LOG</h3>
+          </div>
+          <span class="alert-count-badge" id="alert-counter">0 ALERTS</span>
+        </div>
+
+        <div class="alert-feed-list" id="alert-feed-list">
+          <div class="empty-alerts" id="empty-alert-msg">
+            <div class="shield-check">✓</div>
+            <p>All zones within safe parameters.</p>
+            <span class="empty-sub">Continuous optical flow & density tracking active.</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Dispatch Log Modal / Bottom Toast -->
+      <div class="panel control-room-panel">
+        <div class="panel-header">
+          <div class="panel-title-wrap">
+            <span class="panel-icon">📡</span>
+            <h3>CONTROL ROOM ACTIONS</h3>
+          </div>
+          <span class="status-tag active">DISPATCH READY</span>
+        </div>
+        <div class="dispatch-log" id="dispatch-log">
+          <div class="log-entry system">
+            <span class="log-time">[System]</span>
+            <span class="log-msg">Automated stampede prevention protocol standby.</span>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script src="/static/app.js"></script>
+</body>
+</html>

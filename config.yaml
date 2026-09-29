@@ -1,0 +1,76 @@
+# Crowd Sentinel: Real-Time Crowd Safety & Stampede Early-Warning System Configuration
+
+grid:
+  rows: 3
+  cols: 3
+  zone_names:
+    "0,0": "Zone A1 (North Gate)"
+    "0,1": "Zone A2 (North Concourse)"
+    "0,2": "Zone A3 (VIP Entrance)"
+    "1,0": "Zone B1 (West Corridor)"
+    "1,1": "Zone B2 (Central Plaza)"
+    "1,2": "Zone B3 (East Corridor)"
+    "2,0": "Zone C1 (Southwest Exit)"
+    "2,1": "Zone C2 (Main Stage Access)"
+    "2,2": "Zone C3 (Southeast Exit)"
+
+detection:
+  model_name: "yolov8n.pt"
+  confidence_threshold: 0.25
+  target_width: 640       # Standardized resize width for fast CPU processing
+  frame_skip: 1           # 1 = process every frame
+  target_fps: 20          # Target stream FPS playback
+
+optical_flow:
+  pyr_scale: 0.5
+  levels: 3
+  winsize: 15
+  iterations: 3
+  poly_n: 5
+  poly_sigma: 1.2
+  turbulence_gain: 16.0   # Enhanced motion gain for rapid compression detection
+  min_motion_threshold: 0.25
+
+risk_engine:
+  # Density thresholds (headcount per zone)
+  density:
+    moderate_count: 3     # >= 3 people in a zone = Moderate
+    dense_count: 6        # >= 6 people in a zone = Dense
+    risky_count: 10       # >= 10 people in a zone = Risky
+  
+  # Turbulence thresholds (0.0 to 100.0 scale)
+  turbulence:
+    moderate_threshold: 25.0
+    high_threshold: 45.0
+    risky_threshold: 65.0
+
+  # Combined Risk Weights:
+  # Score = (density_normalized * weight_density) + (turbulence_score * weight_turbulence)
+  weights:
+    density: 0.55
+    turbulence: 0.45
+
+  # Overall zone risk score classification (0 to 100)
+  thresholds:
+    normal_max: 30.0      # 0 - 30: Normal (Green)
+    moderate_max: 52.0    # 31 - 52: Moderate (Yellow)
+    dense_max: 68.0       # 53 - 68: Dense (Orange)
+    # > 68: Risky (Red - Early Warning Stampede Trigger)
+
+  # Override logic: If turbulence is high (> 60) AND count >= 5,
+  # immediately escalate to Risky (crowd panic / rapid directional reversal)
+  rapid_compression_override: true
+
+alert:
+  cooldown_seconds: 4.0   # Debounce alerts per zone
+  history_limit: 100
+
+prediction:
+  enabled: true
+  history_window_seconds: 6.0
+  forecast_seconds: 30.0
+  slope_threshold: 0.5    # Positive rate of crowd influx
+
+privacy:
+  mode_enabled: true
+  description: "Zero Identity Tracking: No face recognition or individual re-identification. Pure spatial density & optical flow dynamics."
