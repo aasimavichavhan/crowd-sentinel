@@ -188,13 +188,33 @@ function handleFrameUpdate(payload) {
     renderZoneMatrix(payload.zones);
   }
 
-  // 5. Handle Alerts
+  // 5. Handle Alerts (including automated email dispatch events)
   if (payload.new_alerts && payload.new_alerts.length > 0) {
     payload.new_alerts.forEach(alert => {
       if (!seenAlertIds.has(alert.id)) {
         seenAlertIds.add(alert.id);
         appendAlertToLog(alert);
         triggerAlarmChime();
+
+        // Check if this is an email dispatch event from the backend
+        if (alert.zone_id === "SYSTEM" && alert.message.includes("Email alert sent")) {
+          addDispatchLogEntry(alert.message, true);
+          // Pulse the email status pill
+          const emailPill = document.getElementById("email-status-pill");
+          if (emailPill) {
+            emailPill.classList.add("dispatching");
+            setTimeout(() => emailPill.classList.remove("dispatching"), 3000);
+          }
+          const emailStatus = document.getElementById("email-dispatch-status");
+          if (emailStatus) {
+            emailStatus.textContent = "EMAIL SENT";
+            emailStatus.className = "status-tag dispatched";
+            setTimeout(() => {
+              emailStatus.textContent = "AUTO-ACTIVE";
+              emailStatus.className = "status-tag active";
+            }, 5000);
+          }
+        }
       }
     });
   }
@@ -390,24 +410,6 @@ function bindUIEvents() {
       });
       addDispatchLogEntry(`Sensitivity preset adjusted to: ${preset.toUpperCase()}`);
     });
-  });
-
-  // Mock Control Room Dispatch Button
-  document.getElementById("dispatch-btn").addEventListener("click", async () => {
-    try {
-      const res = await fetch("/api/control-room/dispatch", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          zone_id: "Active Critical Zones",
-          message: "High crowd congestion & turbulent motion detected. Immediate diversion recommended."
-        })
-      });
-      const data = await res.json();
-      addDispatchLogEntry(data.human_readable, true);
-    } catch (e) {
-      addDispatchLogEntry("Failed to trigger control room webhook.");
-    }
   });
 }
 

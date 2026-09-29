@@ -12,6 +12,7 @@ from detector import PersonDetector
 from optical_flow import OpticalFlowTurbulence
 from risk_engine import RiskEngine
 from visualizer import ZoneVisualizer
+from email_alerter import EmailAlerter
 
 class VideoStreamManager:
     def __init__(self, config_obj: SystemConfig):
@@ -32,6 +33,7 @@ class VideoStreamManager:
         )
         self.risk_engine = RiskEngine(self.config)
         self.visualizer = ZoneVisualizer()
+        self.email_alerter = EmailAlerter()
 
         self.current_video_path: Optional[str] = None
         self.is_playing: bool = False
@@ -164,6 +166,31 @@ class VideoStreamManager:
                     cols=cols,
                     timestamp_sec=current_sec
                 )
+
+                # Step 3b: Automated Email Alert on Dense/Risky
+                if risk_eval["overall_tier"] in ("Dense", "Risky"):
+                    dispatch_result = self.email_alerter.try_send_alert(
+                        overall_tier=risk_eval["overall_tier"],
+                        average_risk=risk_eval["average_risk"],
+                        zones=risk_eval["zones"],
+                        new_alerts=risk_eval["new_alerts"],
+                        total_people=det_res["total_count"]
+                    )
+                    if dispatch_result:
+                        # Inject email dispatch event into the alert stream
+                        email_event = {
+                            "id": f"email-{int(time.time() * 1000)}",
+                            "zone_id": "SYSTEM",
+                            "zone_name": "Automated Email Dispatch",
+                            "risk_level": risk_eval["overall_tier"],
+                            "risk_score": risk_eval["average_risk"],
+                            "density_score": 0,
+                            "people_count": det_res["total_count"],
+                            "turbulence_score": 0,
+                            "timestamp": dispatch_result["timestamp"],
+                            "message": f"📧 Email alert sent to {dispatch_result['recipient']} — Tier: {dispatch_result['tier']}, Risk: {dispatch_result['average_risk']}/100"
+                        }
+                        risk_eval["new_alerts"].append(email_event)
 
                 # FPS calculation
                 fps_counter += 1

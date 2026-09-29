@@ -41,10 +41,10 @@
         <span class="status-indicator" id="status-indicator"></span>
         <span id="status-label">INITIALIZING</span>
       </div>
-      <button class="dispatch-btn" id="dispatch-btn" title="Simulate SMS/Radio Broadcast to Ground Security">
-        <span class="dispatch-icon">🚨</span>
-        <span>NOTIFY CONTROL ROOM</span>
-      </button>
+      <div class="email-status-pill" id="email-status-pill" title="Automated email alerts active for Dense/Risky tiers">
+        <span class="email-icon">📧</span>
+        <span id="email-status-label">AUTO-ALERT ACTIVE</span>
+      </div>
     </div>
   </header>
 
@@ -173,19 +173,19 @@
         </div>
       </div>
 
-      <!-- Dispatch Log Modal / Bottom Toast -->
+      <!-- Automated Email Dispatch Log -->
       <div class="panel control-room-panel">
         <div class="panel-header">
           <div class="panel-title-wrap">
-            <span class="panel-icon">📡</span>
-            <h3>CONTROL ROOM ACTIONS</h3>
+            <span class="panel-icon">📧</span>
+            <h3>AUTOMATED EMAIL DISPATCH</h3>
           </div>
-          <span class="status-tag active">DISPATCH READY</span>
+          <span class="status-tag active" id="email-dispatch-status">AUTO-ACTIVE</span>
         </div>
         <div class="dispatch-log" id="dispatch-log">
           <div class="log-entry system">
             <span class="log-time">[System]</span>
-            <span class="log-msg">Automated stampede prevention protocol standby.</span>
+            <span class="log-msg">Automated email alerts armed for Dense/Risky tiers → tejaskedarpawar@gmail.com</span>
           </div>
         </div>
       </div>

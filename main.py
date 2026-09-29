@@ -179,24 +179,15 @@ async def api_update_config(req: ConfigUpdateRequest):
 
     return {"status": "updated", "config": config.data}
 
-class DispatchRequest(BaseModel):
-    zone_id: Optional[str] = "All Active Alerts"
-    message: Optional[str] = "Emergency rapid response requested"
-
-@app.post("/api/control-room/dispatch")
-async def api_dispatch(req: DispatchRequest):
-    timestamp = datetime.now().strftime("%H:%M:%S")
-    log_entry = {
-        "event": "DISPATCH_ISSUED",
-        "timestamp": timestamp,
-        "target_zone": req.zone_id,
-        "message": req.message,
-        "status": "SMS & Radio Webhook Triggered to On-Ground Security Teams"
-    }
+@app.get("/api/email-status")
+async def api_email_status():
+    """Returns the current email alerter configuration and dispatch log."""
+    alerter = stream_manager.email_alerter
     return {
-        "success": True,
-        "log": log_entry,
-        "human_readable": f"[{timestamp}] Control Room Alert dispatched to Field Units for {req.zone_id}."
+        "smtp_configured": alerter.is_smtp_ready,
+        "recipient": alerter.recipient,
+        "cooldown_seconds": alerter.cooldown,
+        "recent_dispatches": alerter.email_log
     }
 
 @app.websocket("/ws/stream")
